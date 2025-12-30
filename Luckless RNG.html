@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Rarity Generator</title>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Courier New', monospace;
+    background: black;
+    color: white;
+    padding: 10px;
+}
+
+#terminal {
+    max-width: 900px;
+    margin: auto;
+}
+
+#output {
+    min-height: 60vh;
+    white-space: pre-wrap;
+    margin-bottom: 10px;
+    overflow-y: auto;
+}
+
+.line { margin: 6px 0; }
+
+.result-name {
+    font-weight: bold;
+    font-style: italic;
+    font-size: 1.3em;
+}
+
+/* rarity colors */
+.Common { color:#9e9e9e }
+.Uncommon { color:#4caf50 }
+.Good { color:#8bc34a }
+.Better { color:#cddc39 }
+.Rare { color:#2196f3 }
+.Rarer { color:#03a9f4 }
+.UltraRare { color:#9c27b0 }
+.Legendary { color:#ff9800 }
+.Apex { color:#ff5722 }
+.Heavenly { color:#ffd700 }
+.Advanced { color:#00bcd4 }
+.HalfGod { color:#e91e63 }
+.God { color:#f44336 }
+.Scaled { color:#3f51b5 }
+.Greek { color:#00e676 }
+.Aleph { color:#ff1744 }
+.Infinity { color:#d500f9 }
+.Omega { color:#00e5ff }
+.GreekLetter { color:#76ff03 }
+.Japanese { color:#ff6e40 }
+.Space { color:#b388ff }
+.Reality { color:#ff4081 }
+.Ellipsis { color:white }
+.Secret { color:#00ffff }
+
+/* buttons */
+#controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+button {
+    padding: 12px;
+    background: #111;
+    border: 1px solid #555;
+    color: white;
+    font-size: 16px;
+    border-radius: 6px;
+}
+button:active { background:#333; }
+</style>
+</head>
+
+<body>
+<div id="terminal">
+    <div id="output"></div>
+
+    <div id="controls">
+        <button onclick="roll()">ROLL</button>
+        <button onclick="showHistory()">HISTORY</button>
+        <button onclick="showBest()">BEST</button>
+        <button onclick="clearScreen()">CLEAR</button>
+    </div>
+</div>
+
+<script>
+/* ===== YOUR GAME LOGIC (UNCHANGED) ===== */
+const outcomes = [
+{ name:"Common", tier:"Common", weight:1000 },
+{ name:"Uncommon", tier:"Uncommon", weight:800 },
+{ name:"Good", tier:"Good", weight:600 },
+{ name:"Better", tier:"Better", weight:400 },
+{ name:"Rare", tier:"Rare", weight:300 },
+{ name:"Rarer", tier:"Rarer", weight:200 },
+{ name:"Ultra Rare", tier:"UltraRare", weight:150 },
+{ name:"Legendary", tier:"Legendary", weight:100 },
+{ name:"Apex", tier:"Apex", weight:80 },
+{ name:"Heavenly", tier:"Heavenly", weight:60 },
+{ name:"Advanced", tier:"Advanced", weight:50 },
+{ name:"Half god", tier:"HalfGod", weight:40 },
+{ name:"God", tier:"God", weight:30 },
+];
+
+let history = [];
+let luckMultiplier = 1.10;
+let bestRoll = null;
+
+const tierRanking = {
+Common:1, Uncommon:2, Good:3, Better:4, Rare:5, Rarer:6,
+UltraRare:7, Legendary:8, Apex:9, Heavenly:10, Advanced:11,
+HalfGod:12, God:13
+};
+
+const luckBonus = {
+Common:0.0001, Uncommon:0.0002, Good:0.0003,
+Better:0.0005, Rare:0.001, Rarer:0.002,
+UltraRare:0.003, Legendary:0.007, Apex:0.01,
+Heavenly:0.015, Advanced:0.02, HalfGod:0.03, God:0.05
+};
+
+const reactions = {
+Common:"Not bad!", Uncommon:"Nice!", Good:"Good!",
+Better:"Better!", Rare:"Pretty rare!",
+Rarer:"Even rarer!", UltraRare:"ULTRA RARE!",
+Legendary:"LEGENDARY!", Apex:"APEX!",
+Heavenly:"HEAVENLY!", Advanced:"ADVANCED!",
+HalfGod:"HALF GOD!", God:"GOD TIER!"
+};
+
+const output = document.getElementById("output");
+
+function addLine(text){
+    const d=document.createElement("div");
+    d.className="line";
+    d.textContent=text;
+    output.appendChild(d);
+    output.scrollTop=output.scrollHeight;
+}
+
+function addFormatted(html){
+    const d=document.createElement("div");
+    d.className="line";
+    d.innerHTML=html;
+    output.appendChild(d);
+    output.scrollTop=output.scrollHeight;
+}
+
+function roll(){
+    addLine("> roll");
+    let adjusted=outcomes.map(o=>({
+        ...o,
+        w:o.weight*(o.weight<100?luckMultiplier:1)
+    }));
+    let total=adjusted.reduce((s,o)=>s+o.w,0);
+    let r=Math.random()*total;
+    let result;
+    for(let o of adjusted){
+        r-=o.w;
+        if(r<=0){ result=o; break; }
+    }
+    history.unshift(result);
+    if(!bestRoll||tierRanking[result.tier]>tierRanking[bestRoll.tier]) bestRoll=result;
+    let bonus=luckBonus[result.tier]||0;
+    luckMultiplier+=bonus;
+
+    setTimeout(()=>{
+        addLine("you got...");
+        addFormatted(`<span class="result-name ${result.tier}">${result.name}</span>`);
+        addLine(reactions[result.tier]);
+        addLine(`Luck +${(bonus*100).toFixed(2)}%`);
+        addLine("");
+    },300);
+}
+
+function showHistory(){
+    addLine("> history");
+    history.slice(0,10).forEach((h,i)=>addLine(`${i+1}. ${h.name}`));
+    addLine("");
+}
+
+function showBest(){
+    addLine("> best");
+    if(bestRoll)
+        addFormatted(`<span class="result-name ${bestRoll.tier}">${bestRoll.name}</span>`);
+    else addLine("No rolls yet.");
+    addLine("");
+}
+
+function clearScreen(){ output.innerHTML=""; }
+
+addLine("Welcome to Rarity Generator");
+addLine("Tap ROLL to begin");
+addLine("");
+</script>
+</body>
+</html>

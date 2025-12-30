@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rarity Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        #terminal {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        #output {
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .line {
+            margin: 5px 0;
+        }
+        
+        .result-name {
+            font-weight: bold;
+            font-style: italic;
+            font-size: 1.2em;
+        }
+        
+        /* Rarity colors */
+        .Common { color: #9e9e9e; }
+        .Uncommon { color: #4caf50; }
+        .Good { color: #8bc34a; }
+        .Better { color: #cddc39; }
+        .Rare { color: #2196f3; }
+        .Rarer { color: #03a9f4; }
+        .UltraRare { color: #9c27b0; }
+        .Legendary { color: #ff9800; }
+        .Apex { color: #ff5722; }
+        .Heavenly { color: #ffd700; }
+        .Advanced { color: #00bcd4; }
+        .HalfGod { color: #e91e63; }
+        .God { color: #f44336; }
+        .Scaled { color: #3f51b5; }
+        .Greek { color: #00e676; }
+        .Aleph { color: #ff1744; }
+        .Infinity { color: #d500f9; }
+        .Omega { color: #00e5ff; }
+        .GreekLetter { color: #76ff03; }
+        .Japanese { color: #ff6e40; }
+        .Space { color: #b388ff; }
+        .Reality { color: #ff4081; }
+        .Ellipsis { color: #ffffff; }
+        .Secret { color: #00ffff; }
+        
+        #input-line {
+            display: flex;
+            align-items: center;
+        }
+        
+        #prompt {
+            margin-right: 5px;
+        }
+        
+        #input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            outline: none;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div id="output"></div>
+        <div id="input-line">
+            <span id="prompt">&gt;</span>
+            <input type="text" id="input" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const outcomes = [
+            // Basic tier
+            { name: "Common", tier: "Common", weight: 1000 },
+            { name: "Uncommon", tier: "Uncommon", weight: 800 },
+            { name: "Good", tier: "Good", weight: 600 },
+            { name: "Better", tier: "Better", weight: 400 },
+            { name: "Rare", tier: "Rare", weight: 300 },
+            { name: "Rarer", tier: "Rarer", weight: 200 },
+            { name: "Ultra Rare", tier: "UltraRare", weight: 150 },
+            { name: "Legendary", tier: "Legendary", weight: 100 },
+            { name: "Apex", tier: "Apex", weight: 80 },
+            { name: "Heavenly", tier: "Heavenly", weight: 60 },
+            { name: "Advanced", tier: "Advanced", weight: 50 },
+            { name: "Half god", tier: "HalfGod", weight: 40 },
+            { name: "God", tier: "God", weight: 30 },
+            
+            // Scaled section
+            ...["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"].map(letter => 
+                ({ name: `${letter} Scaled`, tier: "Scaled", weight: 20 })),
+            
+            // Greek section
+            ...["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega"].map(letter => 
+                ({ name: letter, tier: "Greek", weight: 15 })),
+            
+            // Aleph section
+            { name: "Aleph Null (ℵ₀)", tier: "Aleph", weight: 10 },
+            { name: "ℵ₀¹⁰", tier: "Aleph", weight: 9 },
+            { name: "ℵ₀↑↑10", tier: "Aleph", weight: 8 },
+            { name: "ℵ₀¹K", tier: "Aleph", weight: 7 },
+            { name: "ℵ₀↑↑1K", tier: "Aleph", weight: 6 },
+            { name: "ℵ₀¹M", tier: "Aleph", weight: 5 },
+            { name: "ℵ₀↑↑1M", tier: "Aleph", weight: 4 },
+            { name: "ℵ₀¹B", tier: "Aleph", weight: 3 },
+            { name: "ℵ₀↑↑1B", tier: "Aleph", weight: 2.5 },
+            { name: "ℵ₀¹T", tier: "Aleph", weight: 2 },
+            { name: "ℵ₀↑↑1T", tier: "Aleph", weight: 1.5 },
+            { name: "ℵ₀¹Qa", tier: "Aleph", weight: 1 },
+            { name: "ℵ₀↑↑Qa", tier: "Aleph", weight: 0.5 },
+            
+            // Infinity section
+            { name: "Infinity (∞)", tier: "Infinity", weight: 10 },
+            { name: "∞¹⁰", tier: "Infinity", weight: 9 },
+            { name: "∞↑↑10", tier: "Infinity", weight: 8 },
+            { name: "∞¹K", tier: "Infinity", weight: 7 },
+            { name: "∞↑↑1K", tier: "Infinity", weight: 6 },
+            { name: "∞¹M", tier: "Infinity", weight: 5 },
+            { name: "∞↑↑1M", tier: "Infinity", weight: 4 },
+            { name: "∞¹B", tier: "Infinity", weight: 3 },
+            { name: "∞↑↑1B", tier: "Infinity", weight: 2.5 },
+            { name: "∞¹T", tier: "Infinity", weight: 2 },
+            { name: "∞↑↑1T", tier: "Infinity", weight: 1.5 },
+            { name: "∞¹Qa", tier: "Infinity", weight: 1 },
+            { name: "∞↑↑Qa", tier: "Infinity", weight: 0.5 },
+            
+            // omega section
+            { name: "omega Null (ω₀)", tier: "Omega", weight: 10 },
+            { name: "ω₀¹⁰", tier: "Omega", weight: 9 },
+            { name: "ω₀↑↑10", tier: "Omega", weight: 8 },
+            { name: "ω₀¹K", tier: "Omega", weight: 7 },
+            { name: "ω₀↑↑1K", tier: "Omega", weight: 6 },
+            { name: "ω₀¹M", tier: "Omega", weight: 5 },
+            { name: "ω₀↑↑1M", tier: "Omega", weight: 4 },
+            { name: "ω₀¹B", tier: "Omega", weight: 3 },
+            { name: "ω₀↑↑1B", tier: "Omega", weight: 2.5 },
+            { name: "ω₀¹T", tier: "Omega", weight: 2 },
+            { name: "ω₀↑↑1T", tier: "Omega", weight: 1.5 },
+            { name: "ω₀¹Qa", tier: "Omega", weight: 1 },
+            { name: "ω₀↑↑Qa", tier: "Omega", weight: 0.5 },
+            
+            // Greek Letter section
+            ...["ε", "ρ", "τ", "υ", "θ", "ο", "π", "α", "σ", "δ", "φ", "η", "ξ", "κ", "λ", "ζ", "χ", "ω", "β", "ν", "μ"].map(letter => 
+                ({ name: letter, tier: "GreekLetter", weight: 5 })),
+            
+            // Japanese section
+            ...["ア", "イ", "ウ", "エ", "オ"].map(char => 
+                ({ name: char, tier: "Japanese", weight: 3 })),
+            
+            // Space section
+            ...["Void", "Black Hole", "White Hole", "Singularity", "Universal", "Multiversal", "Megaversal", "Omniversal", "Metaversal", "Hyperversal", "Outerverse", "Boundless"].map(space => 
+                ({ name: space, tier: "Space", weight: 2 })),
+            
+            // Reality section
+            ...["Base Reality", "Alternate Reality", "Parallel Reality", "Pocket Reality", "Virtual Reality", "Simulated Reality", "Distorted Reality", "Fractured Reality", "Collapsed Reality", "Infinite Reality", "True Reality", "False Reality", "Absolute Reality", "The Backrooms"].map(reality => 
+                ({ name: reality, tier: "Reality", weight: 1 })),
+            
+            // Ellipsis section
+            { name: "Absolute Infinity (Ω)", tier: "Ellipsis", weight: 0.5 },
+            
+            // Secret section
+            ...["Ethereal Veil", "Shadow Nexus", "Oblivion Core", "The Backrooms: Level ∞", "Singularity Beyond", "Quantum Paradox", "Forgotten Realm", "The Event Horizon", "Null Dimension", "Transcendence Point", "Absolute Omega (ω∞)", "Reality Collapse", "The End of All Things"].map(secret => 
+                ({ name: secret, tier: "Secret", weight: 0.1 }))
+        ];
+
+        let totalWeight = outcomes.reduce((sum, outcome) => sum + outcome.weight, 0);
+        let history = [];
+        let luckMultiplier = 1.10; // Starting at 10% bonus (110% total)
+        let bestRoll = null;
+
+        const reactions = {
+            Common: "Not bad!",
+            Uncommon: "Nice!",
+            Good: "Good one!",
+            Better: "Better!",
+            Rare: "Pretty rare!",
+            Rarer: "Even rarer!",
+            UltraRare: "Ultra rare!",
+            Legendary: "Legendary!",
+            Apex: "Apex tier!",
+            Heavenly: "Heavenly!",
+            Advanced: "Advanced!",
+            HalfGod: "Half god status!",
+            God: "God tier!",
+            Scaled: "Scaled up!",
+            Greek: "Greek letter!",
+            Aleph: "Aleph number!",
+            Infinity: "Infinite!",
+            Omega: "Omega level!",
+            GreekLetter: "Greek symbol!",
+            Japanese: "Japanese character!",
+            Space: "Crazy!",
+            Reality: "Reality bending!",
+            Ellipsis: "ABSOLUTE INFINITY!",
+            Secret: "SECRET TIER!!!"
+        };
+
+        const luckBonus = {
+            Common: 0.0001,
+            Uncommon: 0.0002,
+            Good: 0.0003,
+            Better: 0.0005,
+            Rare: 0.001,
+            Rarer: 0.002,
+            UltraRare: 0.003,
+            Legendary: 0.007,
+            Apex: 0.01,
+            Heavenly: 0.015,
+            Advanced: 0.02,
+            HalfGod: 0.03,
+            God: 0.05,
+            Scaled: 0.008,
+            Greek: 0.012,
+            Aleph: 0.025,
+            Infinity: 0.04,
+            Omega: 0.045,
+            GreekLetter: 0.018,
+            Japanese: 0.022,
+            Space: 0.06,
+            Reality: 0.08,
+            Ellipsis: 0.15,
+            Secret: 0.25
+        };
+
+        const tierRanking = {
+            Common: 1, Uncommon: 2, Good: 3, Better: 4, Rare: 5, Rarer: 6,
+            UltraRare: 7, Legendary: 8, Apex: 9, Heavenly: 10, Advanced: 11,
+            HalfGod: 12, God: 13, Scaled: 14, Greek: 15, Aleph: 16,
+            Infinity: 17, Omega: 18, GreekLetter: 19, Japanese: 20,
+            Space: 21, Reality: 22, Ellipsis: 23, Secret: 24
+        };
+
+        const output = document.getElementById('output');
+        const input = document.getElementById('input');
+
+        function addLine(text) {
+            const line = document.createElement('div');
+            line.className = 'line';
+            line.textContent = text;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function addFormattedLine(html) {
+            const line = document.createElement('div');
+            line.className = 'line';
+            line.innerHTML = html;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function roll() {
+            addLine('>roll');
+            addLine('');
+            addLine('rolling...');
+            
+            // Apply luck multiplier to weights for rare items
+            let adjustedOutcomes = outcomes.map(outcome => ({
+                ...outcome,
+                adjustedWeight: outcome.weight * (outcome.weight < 100 ? luckMultiplier : 1)
+            }));
+            
+            let adjustedTotal = adjustedOutcomes.reduce((sum, outcome) => sum + outcome.adjustedWeight, 0);
+            let random = Math.random() * adjustedTotal;
+            let result = null;
+            
+            for (let outcome of adjustedOutcomes) {
+                random -= outcome.adjustedWeight;
+                if (random <= 0) {
+                    result = outcomes.find(o => o.name === outcome.name);
+                    break;
+                }
+            }
+            
+            history.unshift(result);
+            if (history.length > 10) history.pop();
+            
+            // Update best roll
+            if (!bestRoll || tierRanking[result.tier] > tierRanking[bestRoll.tier]) {
+                bestRoll = result;
+            }
+            
+            // Add luck bonus
+            const bonus = luckBonus[result.tier] || 0;
+            luckMultiplier += bonus;
+            
+            setTimeout(() => {
+                addLine('you got...');
+                addFormattedLine(`<span class="result-name ${result.tier}">${result.name}</span>`);
+                addLine(reactions[result.tier] || 'Interesting!');
+                const luckPercent = ((luckMultiplier - 1) * 100).toFixed(2);
+                const bonusPercent = (bonus * 100).toFixed(2);
+                addLine(`+${bonusPercent}% luck! (Total: ${luckPercent}%)`);
+                addLine('');
+            }, 500);
+        }
+
+        function showHistory() {
+            addLine('>history');
+            addLine('');
+            if (history.length === 0) {
+                addLine('No rolls yet!');
+            } else {
+                addLine('Last ' + history.length + ' rolls were...');
+                history.forEach((item, i) => {
+                    addLine((i + 1) + '. ' + item.name);
+                });
+            }
+            addLine('');
+        }
+
+        function showBest() {
+            addLine('>best');
+            addLine('');
+            if (!bestRoll) {
+                addLine('No rolls yet!');
+            } else {
+                addLine('Your best roll:');
+                addFormattedLine(`<span class="result-name ${bestRoll.tier}">${bestRoll.name}</span>`);
+            }
+            addLine('');
+        }
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const command = input.value.trim().toLowerCase();
+                input.value = '';
+                
+                if (command === 'roll') {
+                    roll();
+                } else if (command === 'history') {
+                    showHistory();
+                } else if (command === 'best') {
+                    showBest();
+                } else if (command === 'cls') {
+                    output.innerHTML = '';
+                } else if (command !== '') {
+                    addLine('>' + command);
+                    addLine('Unknown command. Try "roll", "history", or "best"');
+                    addLine('');
+                }
+            }
+        });
+
+        // Welcome message
+        addLine('Welcome to Rarity Generator');
+        addLine('Type "roll" to roll, "history" to see your last 10 rolls, "best" to see your best roll');
+        addLine('');
+    </script>
+</body>
+</html>
